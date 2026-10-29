@@ -1,0 +1,32 @@
+name: Build RustDesk
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: rustdesk-release
+  cancel-in-progress: true
+
+jobs:
+  check-android-signing:
+    runs-on: ubuntu-latest
+    container: python:3.12-slim
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Test APK certificate rejection
+        run: python scripts/test-android-signing.py
+  run-flutter-nightly-build:
+    needs: check-android-signing
+    permissions:
+      contents: write
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      upload-artifact: true
+      upload-tag: "v1.5.0"
